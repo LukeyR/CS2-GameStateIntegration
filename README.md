@@ -1,0 +1,2 @@
+# Counter STrike 2 (CS2) Game State Integration (GSI)
+ A small package to take advantage of [Game State Integration](https://developer.valvesoftware.com/wiki/Counter-Strike:_Global_Offensive_Game_State_Integration) in CS2
