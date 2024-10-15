@@ -9,31 +9,42 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/rs/zerolog/log"
 )
 
-func handlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers LoggingHandler) {
+func handlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers ExtraLoggers) {
+	gsiEvent := extractGSIEventFromRequest(r, loggers)
+	gameEvents := findEvents(gsiEvent)
+	for _, event := range gameEvents {
+		for _, eventHandler := range gameEventHandlers[event.EventType] {
+			eventHandler(gsiEvent, event)
+		}
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) GSIEvent {
 	// Log the request body to stdout in Info level
 	requestBody, err := io.ReadAll(r.Body)
 	if err != nil {
-		loggers.raw.Error().Err(err).Msg("Error reading body")
+		log.Error().Err(err).Msg("Error reading body")
 	}
 	requestBodyFlat := &bytes.Buffer{}
 	err = json.Compact(requestBodyFlat, requestBody)
 	if err != nil {
-		loggers.raw.Error().Err(err).Msg("Error flattening")
+		log.Error().Err(err).Msg("Error flattening")
 	}
 
-	//loggers.raw.Debug().Msg(string(requestBody))
+	//log.Debug().Msg(string(requestBody))
 	loggers.data.Info().Msg(requestBodyFlat.String())
 
 	event := GSIEvent{}
 	err = json.Unmarshal(requestBody, &event)
 	if err != nil {
-		loggers.raw.Error().Err(err).Msg("Error unmarshalling body")
+		log.Error().Err(err).Msg("Error unmarshalling body")
 	}
-	fmt.Println(event)
-
-	w.WriteHeader(http.StatusOK)
+	return event
 }
 
 func StartupAndServe(addr string) error {
@@ -42,14 +53,14 @@ func StartupAndServe(addr string) error {
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
-	loggers.raw.Info().Msg("Registering handlers")
+	log.Info().Msg("Registering handlers")
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		switch request.Method {
 		case http.MethodPost:
 			handlePOSTRequest(writer, request, loggers)
 		default:
 			errMsg := fmt.Sprintf("Unsupported Status code: `%s`", request.Method)
-			loggers.raw.Error().Msg(errMsg)
+			log.Error().Msg(errMsg)
 			writer.WriteHeader(http.StatusNotFound)
 			_, err := writer.Write([]byte(errMsg))
 			if err != nil {
@@ -60,15 +71,15 @@ func StartupAndServe(addr string) error {
 	)
 
 	go func() {
-		loggers.raw.Info().Msg("Starting server")
+		log.Info().Msg("Starting server")
 		if err := http.ListenAndServe(addr, nil); err != nil {
-			loggers.raw.Panic().Err(err).Msg("Error when serving on HTTP")
+			log.Panic().Err(err).Msg("Error when serving on HTTP")
 		}
 	}()
 
 	<-shutdown
 	// Any tidy up here
-	loggers.raw.Info().Msg("Shutting down server")
+	log.Info().Msg("Shutting down server")
 
 	return nil
 }

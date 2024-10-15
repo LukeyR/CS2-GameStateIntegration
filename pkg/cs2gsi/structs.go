@@ -58,14 +58,28 @@ func (csmap CSMap) String() string {
 	)
 }
 
+type WeaponType string
+
+const (
+	WesponTypePistol  WeaponType = "Pistol"
+	WeaponTypeGrenade WeaponType = "Grenade"
+)
+
+type WeaponState string
+
+const (
+	WesponStateHolstered WeaponState = "holstered"
+	WeaponStateActive    WeaponState = "active"
+)
+
 type Weapon struct {
-	Name        string `json:"name"`
-	Paintkit    string `json:"paintkit"`
-	Type        string `json:"type"`
-	AmmoClip    int    `json:"ammo_clip"`
-	AmmoClipMax int    `json:"ammo_clip_max"`
-	AmmoReserve int    `json:"ammo_reserve"`
-	State       string `json:"state"`
+	Name        string      `json:"name"`
+	Paintkit    string      `json:"paintkit"`
+	Type        WeaponType  `json:"type"`
+	AmmoClip    *int        `json:"ammo_clip"`
+	AmmoClipMax *int        `json:"ammo_clip_max"`
+	AmmoReserve *int        `json:"ammo_reserve"`
+	State       WeaponState `json:"state"`
 }
 
 func (weapon Weapon) String() string {
@@ -233,6 +247,7 @@ type GSIEvent struct {
 	Player   *Player   `json:"Player"`
 	Provider *Provider `json:"Provider"`
 	Round    *Round    `json:"Round"`
+	Previous *GSIEvent `json:"Previously"`
 }
 
 func (event GSIEvent) String() string {
@@ -241,11 +256,13 @@ func (event GSIEvent) String() string {
 			"CSMap: %v, \n\t"+
 			"Player: %v, \n\t"+
 			"Provider: %v, \n\t"+
-			"Round: %v \n"+
+			"Round: %v \n\t"+
+			"Previous: %v, \n"+
 			"}",
 		event.CSMap,
 		event.Player,
 		event.Provider,
 		event.Round,
+		event.Previous,
 	)
 }
