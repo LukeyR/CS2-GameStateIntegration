@@ -11,12 +11,11 @@ import (
 
 const IsoTimestampFileUsable = "2006-01-02T15-04-05"
 
-type LoggingHandler struct {
-	raw  zerolog.Logger
+type ExtraLoggers struct {
 	data zerolog.Logger
 }
 
-func setupLoggers() LoggingHandler {
+func setupLoggers() ExtraLoggers {
 
 	LogsFilePath := "./logs"
 	DataLogsFilePath := filepath.Join(LogsFilePath, "data")
@@ -35,13 +34,16 @@ func setupLoggers() LoggingHandler {
 		log.Fatal().Err(err).Str("File path", dataFilePath).Msg("Error creating or opening data log file")
 	}
 
-	rawLogger := zerolog.New(zerolog.MultiLevelWriter(rawFile, os.Stdout)).With().Timestamp().Logger()
+	log.Logger = zerolog.New(zerolog.MultiLevelWriter(rawFile, os.Stdout)).With().Timestamp().Logger()
 	dataLogger := zerolog.New(zerolog.ConsoleWriter{
-		Out:        zerolog.MultiLevelWriter(dataFile, os.Stdout),
+		Out: zerolog.MultiLevelWriter(
+			dataFile,
+			//os.Stdout,
+		),
 		NoColor:    true,
 		PartsOrder: []string{zerolog.MessageFieldName},
 	},
 	)
 
-	return LoggingHandler{rawLogger, dataLogger}
+	return ExtraLoggers{data: dataLogger}
 }
