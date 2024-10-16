@@ -1,6 +1,12 @@
 package cs2gsi
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+
+	"github.com/rs/zerolog/log"
+)
 
 type Team struct {
 	Score                  int `json:"score"`
@@ -9,7 +15,7 @@ type Team struct {
 	MatchesWonThisSeries   int `json:"matches_won_this_series"`
 }
 
-func (team Team) String() string {
+func (team *Team) String() string {
 	return fmt.Sprintf(
 		"Team{ \n\t\t\t\t"+
 			"Score: %v, \n\t\t\t\t"+
@@ -35,7 +41,7 @@ type CSMap struct {
 	NumMatchesToWinSeries int               `json:"num_matches_to_win_series"`
 }
 
-func (csmap CSMap) String() string {
+func (csmap *CSMap) String() string {
 	return fmt.Sprintf(
 		"CSMap{ \n\t\t\t"+
 			"RoundWins: %v, \n\t\t\t"+
@@ -70,6 +76,7 @@ type WeaponState string
 const (
 	WesponStateHolstered WeaponState = "holstered"
 	WeaponStateActive    WeaponState = "active"
+	WeaponStateReloading WeaponState = "reloading"
 )
 
 type Weapon struct {
@@ -82,7 +89,7 @@ type Weapon struct {
 	State       WeaponState `json:"state"`
 }
 
-func (weapon Weapon) String() string {
+func (weapon *Weapon) String() string {
 	return fmt.Sprintf(
 		"Weapon{ \n\t\t\t"+
 			"Name: %v, \n\t\t\t"+
@@ -105,20 +112,28 @@ func (weapon Weapon) String() string {
 
 type WeaponCollection map[string]*Weapon
 
-func (wCollection WeaponCollection) String() string {
+func (wCollection *WeaponCollection) String() string {
 	toReturn := ""
-	for weaponKey, weaponData := range wCollection {
+	for weaponKey, weaponData := range *wCollection {
 		toReturn += fmt.Sprintf("%v: %v,\n", weaponKey, weaponData)
 	}
 	return toReturn
 }
 
+type PlayerActivity string
+
+const (
+	PlayerActivityPaused      PlayerActivity = "menu"
+	PlayerActivityPlaying     PlayerActivity = "playing"
+	PlayerActivityInTextInput PlayerActivity = "textinput"
+)
+
 type Player struct {
-	Steamid      string `json:"steamid"`
-	Name         string `json:"name"`
-	ObserverSlot int    `json:"observer_slot"`
-	Team         string `json:"Team"`
-	Activity     string `json:"activity"`
+	Steamid      string         `json:"steamid"`
+	Name         string         `json:"name"`
+	ObserverSlot int            `json:"observer_slot"`
+	Team         string         `json:"Team"`
+	Activity     PlayerActivity `json:"activity"`
 	MatchStats   struct {
 		Kills   int `json:"kills"`
 		Assists int `json:"assists"`
@@ -206,7 +221,7 @@ type Provider struct {
 	Timestamp int    `json:"timestamp"`
 }
 
-func (provider Provider) String() string {
+func (provider *Provider) String() string {
 	return fmt.Sprintf(
 		"Provider{ \n\t\t"+
 			"Name: %v, \n\t\t"+
@@ -229,7 +244,7 @@ type Round struct {
 	Bomb    string `json:"bomb"`
 }
 
-func (round Round) String() string {
+func (round *Round) String() string {
 	return fmt.Sprintf(
 		"Round{ \n\t\t"+
 			"Phase: %v, \n\t\t"+
@@ -242,27 +257,46 @@ func (round Round) String() string {
 	)
 }
 
-type GSIEvent struct {
-	CSMap    *CSMap    `json:"map"`
-	Player   *Player   `json:"Player"`
-	Provider *Provider `json:"Provider"`
-	Round    *Round    `json:"Round"`
-	Previous *GSIEvent `json:"Previously"`
+type GSIEventAdded struct {
+	Player *struct {
+		Weapons map[string]bool `json:"weapons"`
+	} `json:"player"`
 }
 
-func (event GSIEvent) String() string {
-	return fmt.Sprintf(
-		"GSIEvent{ \n\t"+
-			"CSMap: %v, \n\t"+
-			"Player: %v, \n\t"+
-			"Provider: %v, \n\t"+
-			"Round: %v \n\t"+
-			"Previous: %v, \n"+
-			"}",
-		event.CSMap,
-		event.Player,
-		event.Provider,
-		event.Round,
-		event.Previous,
-	)
+type GSIEvent struct {
+	CSMap    *CSMap         `json:"map"`
+	Player   *Player        `json:"Player"`
+	Provider *Provider      `json:"Provider"`
+	Round    *Round         `json:"Round"`
+	Previous *GSIEvent      `json:"Previously"`
+	Added    *GSIEventAdded `json:"Added"`
+
+	OriginalData string `json:"-"`
+}
+
+func (gsiEvent *GSIEvent) String() string {
+	res, err := json.Marshal(gsiEvent)
+	if err != nil {
+		log.Error().Err(err).Msg("Error Marshalling GSIEvent")
+	}
+	return string(res)
+}
+
+func NewGSIEvent(requestBody string) (*GSIEvent, error) {
+	newEvent := &GSIEvent{}
+	err := json.Unmarshal([]byte(requestBody), newEvent)
+	if err != nil {
+		return nil, err
+	}
+	newEvent.OriginalData = requestBody
+	return newEvent, nil
+}
+func (gsiEvent *GSIEvent) GetOriginalRequestFlat() string {
+	returnBytes := &bytes.Buffer{}
+	err := json.Compact(returnBytes, []byte(gsiEvent.OriginalData))
+	if err != nil {
+		log.Warn().Err(err).Msg("Error Compacting GSIEvent")
+		return gsiEvent.OriginalData
+	}
+	return returnBytes.String()
 }

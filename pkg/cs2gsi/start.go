@@ -14,7 +14,10 @@ import (
 )
 
 func handlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers ExtraLoggers) {
-	gsiEvent := extractGSIEventFromRequest(r, loggers)
+	gsiEvent, err := extractGSIEventFromRequest(r, loggers)
+	if err != nil {
+		return
+	}
 	gameEvents := findEvents(gsiEvent)
 	for _, event := range gameEvents {
 		for _, eventHandler := range gameEventHandlers[event.EventType] {
@@ -24,7 +27,7 @@ func handlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers ExtraLogg
 	w.WriteHeader(http.StatusOK)
 }
 
-func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) GSIEvent {
+func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) (*GSIEvent, error) {
 	// Log the request body to stdout in Info level
 	requestBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -39,12 +42,11 @@ func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) GSIEvent 
 	//log.Debug().Msg(string(requestBody))
 	loggers.data.Info().Msg(requestBodyFlat.String())
 
-	event := GSIEvent{}
-	err = json.Unmarshal(requestBody, &event)
+	event, err := NewGSIEvent(string(requestBody))
 	if err != nil {
-		log.Error().Err(err).Msg("Error unmarshalling body")
+		log.Error().Err(err).Str("original request", string(requestBody)).Msg("Error unmarshalling body")
 	}
-	return event
+	return event, err
 }
 
 func StartupAndServe(addr string) error {
