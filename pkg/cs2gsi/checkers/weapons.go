@@ -1,137 +1,15 @@
-package cs2gsi
+package checkers
 
 import (
 	"slices"
 
+	"CS2-GameStateIntegration/pkg/cs2gsi/events"
+	"CS2-GameStateIntegration/pkg/cs2gsi/structs"
+
 	"github.com/rs/zerolog/log"
 )
 
-/*
-	Main struct returned is GameEventDetails.
-	Alongside the event type raised, it can (anonymously) contain extra data about the event
-*/
-
-type EventPlayerWeaponAmmoChange_t struct {
-	OldAmmoAmount int
-	NewAmmoAmount int
-}
-
-type EventPlayerWeaponReloadStarted_t struct {
-	WeaponKey string
-}
-
-type EventPlayerWeaponChange_t struct {
-	OldWeaponKey  string
-	NewWeaponKey  string
-	OldWeaponName string
-	NewWeaponName string
-}
-
-type EventPlayerActiveWeaponChange_t struct {
-	OldWeaponKey string
-	NewWeaponKey string
-}
-
-type EventPlayerWeaponAddedOrRemoved_t struct {
-	Weapons WeaponCollection
-}
-
-type GameEventDetails struct {
-	EventType                       GameEvent
-	EventPlayerWeaponAmmoChange     *EventPlayerWeaponAmmoChange_t
-	EventPlayerWeaponChange         *EventPlayerWeaponChange_t
-	EventPlayerWeaponAddedOrRemoved *EventPlayerWeaponAddedOrRemoved_t
-	EventPlayerActiveWeaponChange   *EventPlayerActiveWeaponChange_t
-	EventPlayerWeaponReload         *EventPlayerWeaponReloadStarted_t
-}
-
-/*
-All possible event that can be raised, as well as functions needed to check for them
-*/
-type GameEvent int
-
-const (
-	EventHeartbeat GameEvent = iota
-
-	EventPlayerPaused
-	EventPlayerPlaying
-	EventPlayerInTextInput
-
-	EventPlayerWeaponUse
-	EventPlayerWeaponReloadStarted
-	EventPlayerWeaponReloadFinished
-	EventPlayerWeaponChanged
-	EventPlayerWeaponAdded
-	EventPlayerWeaponRemoved
-	EventPlayerActiveWeaponSwitched
-)
-
-type GameEventChecker func(gsiEvent *GSIEvent) *GameEventDetails
-
-var eventCheckers = []GameEventChecker{
-	checkEventHeartbeat,
-	checkEventWeaponsChanged,
-	checkEventPlayerActivityChanged,
-}
-
-/*
-Function for subscribing to GameEvents
-*/
-type gameEventHandlerCallback func(*GSIEvent, GameEventDetails)
-
-var gameEventHandlers = make(map[GameEvent][]gameEventHandlerCallback)
-
-func RegisterEventHandler(event GameEvent, handler gameEventHandlerCallback) {
-	gameEventHandlers[event] = append(gameEventHandlers[event], handler)
-}
-
-func findEvents(gsiEvent *GSIEvent) []GameEventDetails {
-	events := make([]GameEventDetails, 0)
-	for _, checker := range eventCheckers {
-		res := checker(gsiEvent)
-		if res != nil {
-			events = append(events, *res)
-		}
-	}
-	return events
-}
-
-/*
-Event Checking functions. Should have signature `GameEventChecker`
-*/
-func checkEventHeartbeat(gsiEvent *GSIEvent) *GameEventDetails {
-	if gsiEvent.Previous == nil {
-		return &GameEventDetails{EventType: EventHeartbeat}
-	}
-	return nil
-}
-
-func checkEventPlayerActivityChanged(gsiEvent *GSIEvent) *GameEventDetails {
-	if gsiEvent.Previous == nil || gsiEvent.Previous.Player == nil {
-		return nil
-	}
-
-	if gsiEvent.Previous.Player.Activity != "" {
-		switch gsiEvent.Player.Activity {
-		case PlayerActivityPlaying:
-			return &GameEventDetails{EventType: EventPlayerPlaying}
-		case PlayerActivityPaused:
-			return &GameEventDetails{EventType: EventPlayerPaused}
-		case PlayerActivityInTextInput:
-			return &GameEventDetails{EventType: EventPlayerInTextInput}
-		}
-	} else {
-		return nil
-	}
-
-	originalRequest := gsiEvent.GetOriginalRequestFlat()
-	log.Warn().
-		Str("event", originalRequest).
-		Msg("Unknown Player Activity change event")
-	return nil
-}
-
-func checkEventWeaponsChanged(gsiEvent *GSIEvent) *GameEventDetails {
+func CheckEventWeaponsChanged(gsiEvent *structs.GSIEvent) *events.GameEventDetails {
 	previousWeaponsPresent := !(gsiEvent.Previous == nil || gsiEvent.Previous.Player == nil || len(gsiEvent.Previous.Player.Weapons) == 0)
 	newWeaponsPresent := !(gsiEvent.Previous == nil || gsiEvent.Previous.Player == nil || len(gsiEvent.Previous.Player.Weapons) == 0)
 
@@ -145,7 +23,7 @@ func checkEventWeaponsChanged(gsiEvent *GSIEvent) *GameEventDetails {
 			// Player has reloading, or switched weapons of same position for each
 			// other (e.g. swapped ak for awp, or glock for p250, etc. etc.)
 			keyForChangedWeapon := ""
-			var changedWeaponData Weapon
+			var changedWeaponData structs.Weapon
 			for weaponKey, weapon := range gsiEvent.Previous.Player.Weapons {
 				keyForChangedWeapon = weaponKey
 				changedWeaponData = *weapon
@@ -156,9 +34,9 @@ func checkEventWeaponsChanged(gsiEvent *GSIEvent) *GameEventDetails {
 			// Check if the name of the old weapon to the new on has changed - if so, they have changed weapons
 			if changedWeaponData.Name != "" &&
 				changedWeaponData.Name != newWeaponData.Name {
-				return &GameEventDetails{
-					EventType: EventPlayerWeaponChanged,
-					EventPlayerWeaponChange: &EventPlayerWeaponChange_t{
+				return &events.GameEventDetails{
+					EventType: events.EventPlayerWeaponChanged,
+					EventPlayerWeaponChange: &events.WeaponChangeEventDetails{
 						OldWeaponKey:  keyForChangedWeapon,
 						NewWeaponKey:  keyForChangedWeapon,
 						OldWeaponName: changedWeaponData.Name,
@@ -167,19 +45,19 @@ func checkEventWeaponsChanged(gsiEvent *GSIEvent) *GameEventDetails {
 				}
 			}
 
-			if newWeaponData.State == WeaponStateReloading {
-				return &GameEventDetails{
-					EventType: EventPlayerWeaponReloadStarted,
-					EventPlayerWeaponReload: &EventPlayerWeaponReloadStarted_t{
+			if newWeaponData.State == structs.WeaponStateReloading {
+				return &events.GameEventDetails{
+					EventType: events.EventPlayerWeaponReloadStarted,
+					EventPlayerWeaponReload: &events.WeaponReloadStartedEventDetails{
 						WeaponKey: keyForChangedWeapon,
 					},
 				}
 			}
 
-			if changedWeaponData.State == WeaponStateReloading {
-				return &GameEventDetails{
-					EventType: EventPlayerWeaponReloadFinished,
-					EventPlayerWeaponReload: &EventPlayerWeaponReloadStarted_t{
+			if changedWeaponData.State == structs.WeaponStateReloading {
+				return &events.GameEventDetails{
+					EventType: events.EventPlayerWeaponReloadFinished,
+					EventPlayerWeaponReload: &events.WeaponReloadStartedEventDetails{
 						WeaponKey: keyForChangedWeapon,
 					},
 				}
@@ -315,21 +193,21 @@ func checkEventWeaponsChanged(gsiEvent *GSIEvent) *GameEventDetails {
 			//}
 
 			// Weapon name same, their ammo must have changed. Did they shoot, or reload?
-			ammoEvent := EventPlayerWeaponAmmoChange_t{
+			ammoEvent := events.AmmoChangeEventDetails{
 				*changedWeaponData.AmmoClip,
 				*newWeaponData.AmmoClip,
 			}
 
 			if ammoEvent.NewAmmoAmount >= ammoEvent.OldAmmoAmount {
-				return &GameEventDetails{
-					EventType: EventPlayerWeaponReloadFinished,
-					EventPlayerWeaponReload: &EventPlayerWeaponReloadStarted_t{
+				return &events.GameEventDetails{
+					EventType: events.EventPlayerWeaponReloadFinished,
+					EventPlayerWeaponReload: &events.WeaponReloadStartedEventDetails{
 						WeaponKey: keyForChangedWeapon,
 					},
 				}
 			} else if ammoEvent.OldAmmoAmount > ammoEvent.NewAmmoAmount {
-				return &GameEventDetails{
-					EventType:                   EventPlayerWeaponUse,
+				return &events.GameEventDetails{
+					EventType:                   events.EventPlayerWeaponUse,
 					EventPlayerWeaponAmmoChange: &ammoEvent,
 				}
 
@@ -342,16 +220,16 @@ func checkEventWeaponsChanged(gsiEvent *GSIEvent) *GameEventDetails {
 			}
 		} else if len(changedWeapons) >= 2 {
 			// First lets check if they dropped any weapons
-			weaponsDropped := make(WeaponCollection)
+			weaponsDropped := make(structs.WeaponCollection)
 			for weaponKey := range gsiEvent.Previous.Player.Weapons {
 				if _, exists := gsiEvent.Player.Weapons[weaponKey]; !exists {
 					weaponsDropped[weaponKey] = gsiEvent.Previous.Player.Weapons[weaponKey]
 				}
 			}
 			if len(weaponsDropped) > 0 {
-				return &GameEventDetails{
-					EventType:                       EventPlayerWeaponRemoved,
-					EventPlayerWeaponAddedOrRemoved: &EventPlayerWeaponAddedOrRemoved_t{weaponsDropped},
+				return &events.GameEventDetails{
+					EventType:                       events.EventPlayerWeaponRemoved,
+					EventPlayerWeaponAddedOrRemoved: &events.WeaponAddedOrRemovedEventDetails{weaponsDropped},
 				}
 			}
 
@@ -359,32 +237,32 @@ func checkEventWeaponsChanged(gsiEvent *GSIEvent) *GameEventDetails {
 			var oldWeaponHeldKey string
 			var newWeaponHeldKey string
 			for weaponKey, weapon := range gsiEvent.Previous.Player.Weapons {
-				if slices.Contains([]WeaponState{WeaponStateActive, WeaponStateReloading}, weapon.State) {
+				if slices.Contains([]structs.WeaponState{structs.WeaponStateActive, structs.WeaponStateReloading}, weapon.State) {
 					oldWeaponHeldKey = weaponKey
 				}
 			}
 			for weaponKey, weapon := range gsiEvent.Player.Weapons {
-				if weapon.State == WeaponStateActive {
+				if weapon.State == structs.WeaponStateActive {
 					newWeaponHeldKey = weaponKey
 				}
 			}
 
-			return &GameEventDetails{
-				EventType: EventPlayerActiveWeaponSwitched,
-				EventPlayerActiveWeaponChange: &EventPlayerActiveWeaponChange_t{
+			return &events.GameEventDetails{
+				EventType: events.EventPlayerActiveWeaponSwitched,
+				EventPlayerActiveWeaponChange: &events.ActiveWeaponChangeEventDetails{
 					OldWeaponKey: oldWeaponHeldKey,
 					NewWeaponKey: newWeaponHeldKey,
 				},
 			}
 		}
 	} else {
-		weaponsAdded := make(WeaponCollection)
+		weaponsAdded := make(structs.WeaponCollection)
 		for weaponKey := range gsiEvent.Added.Player.Weapons {
 			weaponsAdded[weaponKey] = gsiEvent.Player.Weapons[weaponKey]
 		}
-		return &GameEventDetails{
-			EventType:                       EventPlayerWeaponAdded,
-			EventPlayerWeaponAddedOrRemoved: &EventPlayerWeaponAddedOrRemoved_t{Weapons: weaponsAdded},
+		return &events.GameEventDetails{
+			EventType:                       events.EventPlayerWeaponAdded,
+			EventPlayerWeaponAddedOrRemoved: &events.WeaponAddedOrRemovedEventDetails{Weapons: weaponsAdded},
 		}
 	}
 

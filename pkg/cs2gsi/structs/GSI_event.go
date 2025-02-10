@@ -1,4 +1,4 @@
-package cs2gsi
+package structs
 
 import (
 	"bytes"
@@ -67,14 +67,14 @@ func (csmap *CSMap) String() string {
 type WeaponType string
 
 const (
-	WesponTypePistol  WeaponType = "Pistol"
+	WeaponTypePistol  WeaponType = "Pistol"
 	WeaponTypeGrenade WeaponType = "Grenade"
 )
 
 type WeaponState string
 
 const (
-	WesponStateHolstered WeaponState = "holstered"
+	WeaponStateHolstered WeaponState = "holstered"
 	WeaponStateActive    WeaponState = "active"
 	WeaponStateReloading WeaponState = "reloading"
 )

@@ -10,6 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"CS2-GameStateIntegration/pkg/cs2gsi/structs"
+
 	"github.com/rs/zerolog/log"
 )
 
@@ -27,7 +29,7 @@ func handlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers ExtraLogg
 	w.WriteHeader(http.StatusOK)
 }
 
-func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) (*GSIEvent, error) {
+func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) (*structs.GSIEvent, error) {
 	// Log the request body to stdout in Info level
 	requestBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -40,9 +42,10 @@ func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) (*GSIEven
 	}
 
 	//log.Debug().Msg(string(requestBody))
+	fmt.Println(string(requestBody))
 	loggers.data.Info().Msg(requestBodyFlat.String())
 
-	event, err := NewGSIEvent(string(requestBody))
+	event, err := structs.NewGSIEvent(string(requestBody))
 	if err != nil {
 		log.Error().Err(err).Str("original request", string(requestBody)).Msg("Error unmarshalling body")
 	}
@@ -61,7 +64,7 @@ func StartupAndServe(addr string) error {
 		case http.MethodPost:
 			handlePOSTRequest(writer, request, loggers)
 		default:
-			errMsg := fmt.Sprintf("Unsupported Status code: `%s`", request.Method)
+			errMsg := fmt.Sprintf("Unsupported Method: `%s`", request.Method)
 			log.Error().Msg(errMsg)
 			writer.WriteHeader(http.StatusNotFound)
 			_, err := writer.Write([]byte(errMsg))
