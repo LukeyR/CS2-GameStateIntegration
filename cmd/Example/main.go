@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"CS2-GameStateIntegration/pkg/cs2gsi"
-	"CS2-GameStateIntegration/pkg/cs2gsi/events"
-	"CS2-GameStateIntegration/pkg/cs2gsi/structs"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/events"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/structs"
 )
 
 func main() {
@@ -56,6 +56,69 @@ func main() {
 			gsiEvent.Player.Name,
 			gsiEvent.Player.Weapons[gameEvent.EventPlayerActiveWeaponChange.OldWeaponKey].Name,
 			gsiEvent.Player.Weapons[gameEvent.EventPlayerActiveWeaponChange.NewWeaponKey].Name,
+		)
+	})
+
+	cs2gsi.RegisterEventHandler(events.EventPlayerHealthChanged, func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {
+		//fmt.Println(gsiEvent.GetOriginalRequestFlat())
+		oldHealth := gameEvent.EventPlayerHealthChanged.Old
+		newHealth := gameEvent.EventPlayerHealthChanged.New
+
+		direction := ""
+		if oldHealth < newHealth {
+			direction = "gained"
+		} else {
+			direction = "lost"
+		}
+
+		fmt.Printf(
+			"%v just %v health. (%v => %v) \n",
+			gsiEvent.Player.Name,
+			direction,
+			oldHealth,
+			newHealth,
+		)
+	})
+
+	cs2gsi.RegisterEventHandler(events.EventPlayerArmourChanged, func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {
+		//fmt.Println(gsiEvent.GetOriginalRequestFlat())
+		oldArmour := gameEvent.EventPlayerArmourChanged.Old
+		newArmour := gameEvent.EventPlayerArmourChanged.New
+
+		direction := ""
+		if oldArmour < newArmour {
+			direction = "gained"
+		} else {
+			direction = "lost"
+		}
+
+		fmt.Printf(
+			"%v just %v Armour. (%v => %v) \n",
+			gsiEvent.Player.Name,
+			direction,
+			oldArmour,
+			newArmour,
+		)
+	})
+
+	cs2gsi.RegisterEventHandler(events.EventPlayerAlivenessChanged, func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {
+		//fmt.Println(gsiEvent.GetOriginalRequestFlat())
+		oldHealth := gameEvent.EventPlayerHealthChanged.Old
+		newHealth := gameEvent.EventPlayerHealthChanged.New
+
+		direction := ""
+		if oldHealth > newHealth {
+			direction = "died"
+		} else {
+			direction = "respawned"
+		}
+
+		fmt.Printf(
+			"%v just %v. (%v => %v) \n",
+			gsiEvent.Player.Name,
+			direction,
+			oldHealth,
+			newHealth,
 		)
 	})
 

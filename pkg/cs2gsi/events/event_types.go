@@ -25,6 +25,10 @@ const (
 	EventPlayerWeaponAdded
 	EventPlayerWeaponRemoved
 	EventPlayerActiveWeaponSwitched
+
+	EventPlayerHealthChanged
+	EventPlayerArmourChanged
+	EventPlayerAlivenessChanged
 )
 
 var eventNames = map[GameEvent]string{

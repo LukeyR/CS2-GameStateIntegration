@@ -1,7 +1,7 @@
 package events
 
 import (
-	"CS2-GameStateIntegration/pkg/cs2gsi/structs"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/structs"
 )
 
 type AmmoChangeEventDetails struct {
@@ -29,6 +29,16 @@ type WeaponAddedOrRemovedEventDetails struct {
 	Weapons structs.WeaponCollection
 }
 
+type HealthChangedEventDetails struct {
+	Old int
+	New int
+}
+
+type ArmourChangedEventDetails struct {
+	Old int
+	New int
+}
+
 type GameEventDetails struct {
 	EventType                       GameEvent
 	EventPlayerWeaponAmmoChange     *AmmoChangeEventDetails
@@ -36,4 +46,6 @@ type GameEventDetails struct {
 	EventPlayerWeaponAddedOrRemoved *WeaponAddedOrRemovedEventDetails
 	EventPlayerActiveWeaponChange   *ActiveWeaponChangeEventDetails
 	EventPlayerWeaponReload         *WeaponReloadStartedEventDetails
+	EventPlayerHealthChanged        *HealthChangedEventDetails
+	EventPlayerArmourChanged        *ArmourChangedEventDetails
 }

@@ -143,8 +143,8 @@ type Player struct {
 	} `json:"match_stats"`
 
 	State struct {
-		Health      int  `json:"health"`
-		Armor       int  `json:"armor"`
+		Health      *int `json:"health"`
+		Armor       *int `json:"armor"`
 		Helmet      bool `json:"helmet"`
 		Flashed     int  `json:"flashed"`
 		Smoked      int  `json:"smoked"`

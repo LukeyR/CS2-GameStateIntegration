@@ -3,8 +3,8 @@ package checkers
 import (
 	"slices"
 
-	"CS2-GameStateIntegration/pkg/cs2gsi/events"
-	"CS2-GameStateIntegration/pkg/cs2gsi/structs"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/events"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/structs"
 
 	"github.com/rs/zerolog/log"
 )
@@ -12,8 +12,9 @@ import (
 func CheckEventWeaponsChanged(gsiEvent *structs.GSIEvent) *events.GameEventDetails {
 	previousWeaponsPresent := !(gsiEvent.Previous == nil || gsiEvent.Previous.Player == nil || len(gsiEvent.Previous.Player.Weapons) == 0)
 	newWeaponsPresent := !(gsiEvent.Previous == nil || gsiEvent.Previous.Player == nil || len(gsiEvent.Previous.Player.Weapons) == 0)
+	playerDead := *gsiEvent.Player.State.Health == 0
 
-	if !previousWeaponsPresent && !newWeaponsPresent {
+	if (!previousWeaponsPresent && !newWeaponsPresent) || playerDead {
 		return nil
 	}
 

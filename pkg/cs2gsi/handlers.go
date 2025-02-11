@@ -1,9 +1,9 @@
 package cs2gsi
 
 import (
-	"CS2-GameStateIntegration/pkg/cs2gsi/checkers"
-	"CS2-GameStateIntegration/pkg/cs2gsi/events"
-	"CS2-GameStateIntegration/pkg/cs2gsi/structs"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/checkers"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/events"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/structs"
 )
 
 /*
@@ -17,6 +17,9 @@ var eventCheckers = []GameEventChecker{
 	checkers.CheckEventHeartbeat,
 	checkers.CheckEventWeaponsChanged,
 	checkers.CheckEventPlayerActivityChanged,
+	checkers.CheckEventPlayerAliveStatusChanged,
+	checkers.CheckEventPlayerHealthChanged,
+	checkers.CheckEventPlayerArmourChanged,
 }
 
 /*

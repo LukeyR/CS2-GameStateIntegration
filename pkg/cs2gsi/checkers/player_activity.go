@@ -1,8 +1,8 @@
 package checkers
 
 import (
-	"CS2-GameStateIntegration/pkg/cs2gsi/events"
-	"CS2-GameStateIntegration/pkg/cs2gsi/structs"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/events"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/structs"
 
 	"github.com/rs/zerolog/log"
 )

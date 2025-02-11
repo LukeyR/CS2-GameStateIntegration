@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"CS2-GameStateIntegration/pkg/cs2gsi/structs"
+	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/structs"
 
 	"github.com/rs/zerolog/log"
 )
@@ -42,7 +42,7 @@ func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) (*structs
 	}
 
 	//log.Debug().Msg(string(requestBody))
-	fmt.Println(string(requestBody))
+	//fmt.Println(string(requestBody))
 	loggers.data.Info().Msg(requestBodyFlat.String())
 
 	event, err := structs.NewGSIEvent(string(requestBody))
