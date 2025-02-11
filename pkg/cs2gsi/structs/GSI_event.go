@@ -1,6 +1,12 @@
-package cs2gsi
+package structs
 
-import "fmt"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+
+	"github.com/rs/zerolog/log"
+)
 
 type Team struct {
 	Score                  int `json:"score"`
@@ -9,7 +15,7 @@ type Team struct {
 	MatchesWonThisSeries   int `json:"matches_won_this_series"`
 }
 
-func (team Team) String() string {
+func (team *Team) String() string {
 	return fmt.Sprintf(
 		"Team{ \n\t\t\t\t"+
 			"Score: %v, \n\t\t\t\t"+
@@ -35,7 +41,7 @@ type CSMap struct {
 	NumMatchesToWinSeries int               `json:"num_matches_to_win_series"`
 }
 
-func (csmap CSMap) String() string {
+func (csmap *CSMap) String() string {
 	return fmt.Sprintf(
 		"CSMap{ \n\t\t\t"+
 			"RoundWins: %v, \n\t\t\t"+
@@ -58,17 +64,32 @@ func (csmap CSMap) String() string {
 	)
 }
 
+type WeaponType string
+
+const (
+	WeaponTypePistol  WeaponType = "Pistol"
+	WeaponTypeGrenade WeaponType = "Grenade"
+)
+
+type WeaponState string
+
+const (
+	WeaponStateHolstered WeaponState = "holstered"
+	WeaponStateActive    WeaponState = "active"
+	WeaponStateReloading WeaponState = "reloading"
+)
+
 type Weapon struct {
-	Name        string `json:"name"`
-	Paintkit    string `json:"paintkit"`
-	Type        string `json:"type"`
-	AmmoClip    int    `json:"ammo_clip"`
-	AmmoClipMax int    `json:"ammo_clip_max"`
-	AmmoReserve int    `json:"ammo_reserve"`
-	State       string `json:"state"`
+	Name        string      `json:"name"`
+	Paintkit    string      `json:"paintkit"`
+	Type        WeaponType  `json:"type"`
+	AmmoClip    *int        `json:"ammo_clip"`
+	AmmoClipMax *int        `json:"ammo_clip_max"`
+	AmmoReserve *int        `json:"ammo_reserve"`
+	State       WeaponState `json:"state"`
 }
 
-func (weapon Weapon) String() string {
+func (weapon *Weapon) String() string {
 	return fmt.Sprintf(
 		"Weapon{ \n\t\t\t"+
 			"Name: %v, \n\t\t\t"+
@@ -91,20 +112,28 @@ func (weapon Weapon) String() string {
 
 type WeaponCollection map[string]*Weapon
 
-func (wCollection WeaponCollection) String() string {
+func (wCollection *WeaponCollection) String() string {
 	toReturn := ""
-	for weaponKey, weaponData := range wCollection {
+	for weaponKey, weaponData := range *wCollection {
 		toReturn += fmt.Sprintf("%v: %v,\n", weaponKey, weaponData)
 	}
 	return toReturn
 }
 
+type PlayerActivity string
+
+const (
+	PlayerActivityPaused      PlayerActivity = "menu"
+	PlayerActivityPlaying     PlayerActivity = "playing"
+	PlayerActivityInTextInput PlayerActivity = "textinput"
+)
+
 type Player struct {
-	Steamid      string `json:"steamid"`
-	Name         string `json:"name"`
-	ObserverSlot int    `json:"observer_slot"`
-	Team         string `json:"Team"`
-	Activity     string `json:"activity"`
+	Steamid      string         `json:"steamid"`
+	Name         string         `json:"name"`
+	ObserverSlot int            `json:"observer_slot"`
+	Team         string         `json:"Team"`
+	Activity     PlayerActivity `json:"activity"`
 	MatchStats   struct {
 		Kills   int `json:"kills"`
 		Assists int `json:"assists"`
@@ -114,8 +143,8 @@ type Player struct {
 	} `json:"match_stats"`
 
 	State struct {
-		Health      int  `json:"health"`
-		Armor       int  `json:"armor"`
+		Health      *int `json:"health"`
+		Armor       *int `json:"armor"`
 		Helmet      bool `json:"helmet"`
 		Flashed     int  `json:"flashed"`
 		Smoked      int  `json:"smoked"`
@@ -192,7 +221,7 @@ type Provider struct {
 	Timestamp int    `json:"timestamp"`
 }
 
-func (provider Provider) String() string {
+func (provider *Provider) String() string {
 	return fmt.Sprintf(
 		"Provider{ \n\t\t"+
 			"Name: %v, \n\t\t"+
@@ -215,7 +244,7 @@ type Round struct {
 	Bomb    string `json:"bomb"`
 }
 
-func (round Round) String() string {
+func (round *Round) String() string {
 	return fmt.Sprintf(
 		"Round{ \n\t\t"+
 			"Phase: %v, \n\t\t"+
@@ -228,24 +257,50 @@ func (round Round) String() string {
 	)
 }
 
-type GSIEvent struct {
-	CSMap    *CSMap    `json:"map"`
-	Player   *Player   `json:"Player"`
-	Provider *Provider `json:"Provider"`
-	Round    *Round    `json:"Round"`
+type GSIEventAdded struct {
+	Player *struct {
+		Weapons map[string]bool `json:"weapons"`
+	} `json:"player"`
+	Round *struct {
+		Bomb    bool `json:"bomb"`
+		WinTeam bool `json:"win_team"`
+	}
 }
 
-func (event GSIEvent) String() string {
-	return fmt.Sprintf(
-		"GSIEvent{ \n\t"+
-			"CSMap: %v, \n\t"+
-			"Player: %v, \n\t"+
-			"Provider: %v, \n\t"+
-			"Round: %v \n"+
-			"}",
-		event.CSMap,
-		event.Player,
-		event.Provider,
-		event.Round,
-	)
+type GSIEvent struct {
+	CSMap    *CSMap         `json:"map"`
+	Player   *Player        `json:"Player"`
+	Provider *Provider      `json:"Provider"`
+	Round    *Round         `json:"Round"`
+	Previous *GSIEvent      `json:"Previously"`
+	Added    *GSIEventAdded `json:"Added"`
+
+	OriginalData string `json:"-"`
+}
+
+func (gsiEvent *GSIEvent) String() string {
+	res, err := json.Marshal(gsiEvent)
+	if err != nil {
+		log.Error().Err(err).Msg("Error Marshalling GSIEvent")
+	}
+	return string(res)
+}
+
+func NewGSIEvent(requestBody string) (*GSIEvent, error) {
+	newEvent := &GSIEvent{}
+	err := json.Unmarshal([]byte(requestBody), newEvent)
+	if err != nil {
+		return nil, err
+	}
+	newEvent.OriginalData = requestBody
+	return newEvent, nil
+}
+func (gsiEvent *GSIEvent) GetOriginalRequestFlat() string {
+	returnBytes := &bytes.Buffer{}
+	err := json.Compact(returnBytes, []byte(gsiEvent.OriginalData))
+	if err != nil {
+		log.Warn().Err(err).Msg("Error Compacting GSIEvent")
+		return gsiEvent.OriginalData
+	}
+	return returnBytes.String()
 }
