@@ -261,6 +261,10 @@ type GSIEventAdded struct {
 	Player *struct {
 		Weapons map[string]bool `json:"weapons"`
 	} `json:"player"`
+	Round *struct {
+		Bomb    bool `json:"bomb"`
+		WinTeam bool `json:"win_team"`
+	}
 }
 
 type GSIEvent struct {

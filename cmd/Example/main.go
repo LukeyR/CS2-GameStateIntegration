@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi"
 	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/events"
@@ -9,6 +10,20 @@ import (
 )
 
 func main() {
+	cs2gsi.RegisterGlobalHandler(func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {
+		fmt.Printf("(%v) %v %v\n",
+			time.Now().Format("2006-01-02 15:04:05.000"),
+			events.EnumToEventName[gameEvent.EventType],
+			gsiEvent.GetOriginalRequestFlat(),
+		)
+	})
+	cs2gsi.RegisterNonEventHandler(func(gsiEvent *structs.GSIEvent) {
+		fmt.Printf("(%v) #N/A %v\n",
+			time.Now().Format("2006-01-02 15:04:05.000"),
+			gsiEvent.GetOriginalRequestFlat(),
+		)
+	})
+
 	cs2gsi.RegisterEventHandler(events.EventPlayerWeaponUse, func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {
 		//fmt.Println(gsiEvent.GetOriginalRequestFlat())
 		fmt.Printf("%v just shot %v bullets. They have %v bullets left\n", gsiEvent.Player.Name, gameEvent.EventPlayerWeaponAmmoChange.OldAmmoAmount-gameEvent.EventPlayerWeaponAmmoChange.NewAmmoAmount, gameEvent.EventPlayerWeaponAmmoChange.NewAmmoAmount)
@@ -57,6 +72,21 @@ func main() {
 			gsiEvent.Player.Weapons[gameEvent.EventPlayerActiveWeaponChange.OldWeaponKey].Name,
 			gsiEvent.Player.Weapons[gameEvent.EventPlayerActiveWeaponChange.NewWeaponKey].Name,
 		)
+	})
+
+	cs2gsi.RegisterEventHandler(events.EventBombPlanted, func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {
+		//fmt.Println(gsiEvent.GetOriginalRequestFlat())
+		fmt.Println("The Bomb has been planted")
+	})
+
+	cs2gsi.RegisterEventHandler(events.EventBombExploded, func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {
+		//fmt.Println(gsiEvent.GetOriginalRequestFlat())
+		fmt.Println("The Bomb has exploded")
+	})
+
+	cs2gsi.RegisterEventHandler(events.EventBombDefused, func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {
+		//fmt.Println(gsiEvent.GetOriginalRequestFlat())
+		fmt.Println("The Bomb has been defused")
 	})
 
 	cs2gsi.RegisterEventHandler(events.EventPlayerHealthChanged, func(gsiEvent *structs.GSIEvent, gameEvent events.GameEventDetails) {

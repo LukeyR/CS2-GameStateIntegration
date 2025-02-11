@@ -20,6 +20,9 @@ var eventCheckers = []GameEventChecker{
 	checkers.CheckEventPlayerAliveStatusChanged,
 	checkers.CheckEventPlayerHealthChanged,
 	checkers.CheckEventPlayerArmourChanged,
+	checkers.CheckEventBombPlanted,
+	checkers.CheckEventBombExploded,
+	checkers.CheckEventBombDefused,
 }
 
 /*
@@ -28,12 +31,23 @@ Function for subscribing to GameEvents
 type gameEventHandlerCallback func(*structs.GSIEvent, events.GameEventDetails)
 
 var gameEventHandlers = make(map[events.GameEvent][]gameEventHandlerCallback)
+var gameNonEventHandlers = make([]func(event *structs.GSIEvent), 0)
+
+func RegisterNonEventHandler(handler func(event *structs.GSIEvent)) {
+	gameNonEventHandlers = append(gameNonEventHandlers, handler)
+}
 
 func RegisterEventHandler(event events.GameEvent, handler gameEventHandlerCallback) {
 	gameEventHandlers[event] = append(gameEventHandlers[event], handler)
 }
 
-func findEvents(gsiEvent *structs.GSIEvent) []events.GameEventDetails {
+func RegisterGlobalHandler(handler gameEventHandlerCallback) {
+	for enum := range events.EnumToEventName {
+		RegisterEventHandler(enum, handler)
+	}
+}
+
+func FindEvents(gsiEvent *structs.GSIEvent) []events.GameEventDetails {
 	gameEvents := make([]events.GameEventDetails, 0)
 	for _, checker := range eventCheckers {
 		res := checker(gsiEvent)

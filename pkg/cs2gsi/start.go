@@ -1,56 +1,17 @@
 package cs2gsi
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/LukeyR/CS2-GameStateIntegration/pkg/cs2gsi/structs"
-
+	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 )
 
-func handlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers ExtraLoggers) {
-	gsiEvent, err := extractGSIEventFromRequest(r, loggers)
-	if err != nil {
-		return
-	}
-	gameEvents := findEvents(gsiEvent)
-	for _, event := range gameEvents {
-		for _, eventHandler := range gameEventHandlers[event.EventType] {
-			eventHandler(gsiEvent, event)
-		}
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-func extractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) (*structs.GSIEvent, error) {
-	// Log the request body to stdout in Info level
-	requestBody, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Error().Err(err).Msg("Error reading body")
-	}
-	requestBodyFlat := &bytes.Buffer{}
-	err = json.Compact(requestBodyFlat, requestBody)
-	if err != nil {
-		log.Error().Err(err).Msg("Error flattening")
-	}
-
-	//log.Debug().Msg(string(requestBody))
-	//fmt.Println(string(requestBody))
-	loggers.data.Info().Msg(requestBodyFlat.String())
-
-	event, err := structs.NewGSIEvent(string(requestBody))
-	if err != nil {
-		log.Error().Err(err).Str("original request", string(requestBody)).Msg("Error unmarshalling body")
-	}
-	return event, err
-}
+var upgrader = websocket.Upgrader{}
 
 func StartupAndServe(addr string) error {
 	loggers := setupLoggers()
@@ -62,7 +23,7 @@ func StartupAndServe(addr string) error {
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		switch request.Method {
 		case http.MethodPost:
-			handlePOSTRequest(writer, request, loggers)
+			HandlePOSTRequest(writer, request, loggers)
 		default:
 			errMsg := fmt.Sprintf("Unsupported Method: `%s`", request.Method)
 			log.Error().Msg(errMsg)
@@ -72,6 +33,28 @@ func StartupAndServe(addr string) error {
 				return
 			}
 		}
+	},
+	)
+
+	http.HandleFunc("/ws", func(writer http.ResponseWriter, request *http.Request) {
+		log.Info().Msg("Websocket Connection requested")
+		conn, err := upgrader.Upgrade(writer, request, nil)
+		defer func() {
+			err := conn.Close()
+			if err != nil {
+				log.Err(err).Msg("Failed websocket upgrade")
+			}
+		}()
+		log.Info().Msgf("Websocket Connection upgrade success: %v", request.URL)
+
+		if err != nil {
+			log.Err(err)
+			return
+		}
+
+		HandleWS(writer, request, conn)
+
+		<-shutdown
 	},
 	)
 

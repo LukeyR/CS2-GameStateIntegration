@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Countdown</title>
+    <style>
+        body {
+            font-family: monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+
+        #countdown {
+            font-size: 4em;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-width: 100px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="countdown"></div>
+
+<script>
+    const countdownDisplay = document.getElementById('countdown');
+    let timerInterval;
+
+    const ws = new WebSocket('ws://localhost:8000/ws?Events=EventBombPlanted');
+
+    ws.onopen = () => {
+        console.log('WebSocket connection opened');
+    };
+
+    ws.onmessage = (event) => {
+        console.log('Received message:', event.data);
+        startCountdown(40);
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket connection closed');
+        clearInterval(timerInterval);
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        clearInterval(timerInterval);
+    };
+
+    function startCountdown(seconds) {
+        clearInterval(timerInterval);
+
+        let timeLeft = seconds * 10;
+
+        updateDisplay(timeLeft);
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft < 0) {
+                clearInterval(timerInterval);
+                countdownDisplay.textContent = "BOOM!";
+                return;
+            }
+            updateDisplay(timeLeft);
+        }, 100);
+    }
+
+    function updateDisplay(time) {
+        countdownDisplay.textContent = (time / 10).toFixed(1);
+    }
+</script>
+
+</body>
+</html>

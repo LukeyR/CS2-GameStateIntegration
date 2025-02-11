@@ -29,9 +29,14 @@ const (
 	EventPlayerHealthChanged
 	EventPlayerArmourChanged
 	EventPlayerAlivenessChanged
+
+	EventBombPlanted
+	EventBombDefused
+	EventBombExploded
 )
 
-var eventNames = map[GameEvent]string{
+// EnumToEventName KEEP THIS LIST UP TO DATE WITH THE ABOVE ENUMS AS IT IS USED IN DOCS
+var EnumToEventName = map[GameEvent]string{
 	EventHeartbeat:                  "HeartBeat",
 	EventPlayerPaused:               "PlayerPaused",
 	EventPlayerPlaying:              "PlayerPlaying",
@@ -43,10 +48,23 @@ var eventNames = map[GameEvent]string{
 	EventPlayerWeaponAdded:          "PlayerWeaponAdded",
 	EventPlayerWeaponRemoved:        "PlayerWeaponRemoved",
 	EventPlayerActiveWeaponSwitched: "PlayerActiveWeaponSwitched",
+	EventPlayerHealthChanged:        "EventPlayerHealthChanged",
+	EventPlayerArmourChanged:        "EventPlayerArmourChanged",
+	EventPlayerAlivenessChanged:     "EventPlayerAlivenessChanged",
+	EventBombPlanted:                "EventBombPlanted",
+	EventBombDefused:                "EventBombDefused",
+	EventBombExploded:               "EventBombExploded",
 }
+var EventNameToEnum map[string]GameEvent = func() map[string]GameEvent {
+	m := make(map[string]GameEvent)
+	for k, v := range EnumToEventName {
+		m[v] = k
+	}
+	return m
+}()
 
 func (e GameEvent) String() string {
-	if name, exists := eventNames[e]; exists {
+	if name, exists := EnumToEventName[e]; exists {
 		return name
 	}
 	log.Error().Msgf("Unknown GameEvent %v", strconv.Itoa(int(e)))
