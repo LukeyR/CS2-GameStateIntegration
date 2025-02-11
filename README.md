@@ -7,7 +7,7 @@ See [cmd](./cmd) for 2 dummy projects.
 ## Supported Events
 Not every unique event in the game is supported yet (although I welcome changes that add more).
 The [following ones](./pkg/cs2gsi/events/event_types.go) are supported:
- ```
+
 | *ID* | *Event Name* | *Description* | Notes |
 | 0 | EventHeartbeat  | Heartbeat sent from the game to check the server is still accepting |  |
 | 1 | EventPlayerPaused | Player paused the game |  |
@@ -26,7 +26,7 @@ The [following ones](./pkg/cs2gsi/events/event_types.go) are supported:
 | 14 | EventBombPlanted | Bomb was planted | This one doesn't seem instant. From my testing it will always fire circa 1 second late to account for the extra 1 second (white LED) at the end of the bomb countdown sequence. This also relies on the heartbeat packet, so settting your heartbeat packet lower will yield more accurate timing. I have mine set to 0.5 seconds for testing |
 | 15 | EventBombDefused | Bomb was defused |  |
 | 16 | EventBombExploded | Bomb exploded |  |
-```
+
 
 ## Usage
 ### Using the go-package
