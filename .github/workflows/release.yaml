@@ -3,7 +3,7 @@ name: Build and Release Go Binary (Windows)
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
 
 jobs:
   build-windows:
@@ -18,13 +18,15 @@ jobs:
           go-version: '^1.23.2'
 
       - name: Build Windows binary
+        shell: pwsh
         run: |
           cd ./cmd/SimpleWebsocketForBinary
-          GOOS=windows GOARCH=amd64 go build -o CS2_GameStateIntegration.exe
+          $env:GOOS = "windows"
+          $env:GOARCH = "amd64"
+          go build -o CS2_GameStateIntegration.exe
 
       - name: Upload binary to release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: ./cmd/SimpleWebsocketForBinary/CS2_GameStateIntegration.exe
           name: CS2_GameStateIntegration.exe

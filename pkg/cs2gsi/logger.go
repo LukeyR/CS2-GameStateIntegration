@@ -18,8 +18,14 @@ type ExtraLoggers struct {
 func setupLoggers() ExtraLoggers {
 
 	LogsFilePath := "./logs"
-	DataLogsFilePath := filepath.Join(LogsFilePath, "data")
-	RawLogsFilePath := filepath.Join(LogsFilePath, "raw")
+	DataLogsFilePath := filepath.Join(LogsFilePath, "data/")
+	RawLogsFilePath := filepath.Join(LogsFilePath, "raw/")
+	if err := os.MkdirAll(DataLogsFilePath, 0666); err != nil {
+		log.Panic().Err(err).Msg("Unable to create log files")
+	}
+	if err := os.MkdirAll(RawLogsFilePath, 0666); err != nil {
+		log.Panic().Err(err).Msg("Unable to create log files")
+	}
 
 	currDt := time.Now().Format(IsoTimestampFileUsable)
 	rawFilePath := filepath.Join(RawLogsFilePath, currDt+".log")
