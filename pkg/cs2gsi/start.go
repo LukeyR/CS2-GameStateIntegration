@@ -13,6 +13,9 @@ import (
 
 var upgrader = websocket.Upgrader{}
 
+// StartupAndServe is the main entrypoint for the application.
+// addr is the address and port you wish to serve the application on.
+// Pass it in the same way you would to http.ListenAndServe()
 func StartupAndServe(addr string) error {
 	loggers := setupLoggers()
 
@@ -23,7 +26,7 @@ func StartupAndServe(addr string) error {
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		switch request.Method {
 		case http.MethodPost:
-			HandlePOSTRequest(writer, request, loggers)
+			handlePOSTRequest(writer, request, loggers)
 		default:
 			errMsg := fmt.Sprintf("Unsupported Method: `%s`", request.Method)
 			log.Error().Msg(errMsg)
@@ -52,7 +55,7 @@ func StartupAndServe(addr string) error {
 			return
 		}
 
-		HandleWS(writer, request, conn)
+		handleWS(writer, request, conn)
 
 		<-shutdown
 	},

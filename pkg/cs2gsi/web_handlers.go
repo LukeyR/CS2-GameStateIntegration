@@ -13,12 +13,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func HandlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers ExtraLoggers) {
-	gsiEvent, err := ExtractGSIEventFromRequest(r, loggers)
+func handlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers extraLoggers) {
+	gsiEvent, err := extractGSIEventFromRequest(r, loggers)
 	if err != nil {
 		return
 	}
-	gameEvents := FindEvents(gsiEvent)
+	gameEvents := findEvents(gsiEvent)
 	if len(gameEvents) > 0 {
 		for _, event := range gameEvents {
 			for _, eventHandler := range gameEventHandlers[event.EventType] {
@@ -33,7 +33,7 @@ func HandlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers ExtraLogg
 	w.WriteHeader(http.StatusOK)
 }
 
-func HandleWS(_ http.ResponseWriter, request *http.Request, conn *websocket.Conn) {
+func handleWS(_ http.ResponseWriter, request *http.Request, conn *websocket.Conn) {
 
 	queryParams := request.URL.Query()
 
@@ -64,7 +64,7 @@ func HandleWS(_ http.ResponseWriter, request *http.Request, conn *websocket.Conn
 	}
 }
 
-func ExtractGSIEventFromRequest(r *http.Request, loggers ExtraLoggers) (*structs.GSIEvent, error) {
+func extractGSIEventFromRequest(r *http.Request, loggers extraLoggers) (*structs.GSIEvent, error) {
 	// Log the request body to stdout in Info level
 	requestBody, err := io.ReadAll(r.Body)
 	if err != nil {

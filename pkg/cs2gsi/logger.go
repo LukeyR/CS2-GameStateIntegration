@@ -11,11 +11,11 @@ import (
 
 const IsoTimestampFileUsable = "2006-01-02T15-04-05"
 
-type ExtraLoggers struct {
+type extraLoggers struct {
 	data zerolog.Logger
 }
 
-func setupLoggers() ExtraLoggers {
+func setupLoggers() extraLoggers {
 
 	LogsFilePath := "./logs"
 	DataLogsFilePath := filepath.Join(LogsFilePath, "data/")
@@ -51,5 +51,5 @@ func setupLoggers() ExtraLoggers {
 	},
 	)
 
-	return ExtraLoggers{data: dataLogger}
+	return extraLoggers{data: dataLogger}
 }
