@@ -43,7 +43,7 @@ jobs:
       - name: Build BombTimer Windows binary
         shell: pwsh
         run: |
-          cd ./cmd/BombTimer
+          cd ../BombTimer
           $env:GOOS = "windows"
           $env:GOARCH = "amd64"
           go build -o CS2_GameStateIntegration-BombTimer.exe
