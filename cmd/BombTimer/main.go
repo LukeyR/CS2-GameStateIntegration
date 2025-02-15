@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"html/template"
 	"log"
@@ -40,14 +41,17 @@ func main() {
 	}
 }
 
+//go:embed index.html
+var templates embed.FS
+
 func bombTimerHandler(w http.ResponseWriter, _ *http.Request) {
-	tmpl, err := template.ParseFiles("./cmd/BombTimer/index.html")
+	tmpl, err := template.ParseFS(&templates, "index.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = tmpl.Execute(w, nil)
+	err = tmpl.ExecuteTemplate(w, "index.html", nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
