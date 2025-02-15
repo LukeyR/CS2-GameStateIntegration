@@ -29,29 +29,20 @@ jobs:
           $env:GOARCH = "amd64"
           go build -o CS2_GameStateIntegration-WSInterface.exe
 
-      - name: Upload WS binary to release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: ./cmd/SimpleWebsocketForBinary/CS2_GameStateIntegration-WSInterface.exe
-          name: CS2_GameStateIntegration-WSInterface.exe
-          tag_name: ${{ github.ref }}
-          body: |
-            ## CS2_GameStateIntegration-WSInterface.exe Release
-
-            Built from tag ${{ github.ref }}
-
       - name: Build BombTimer Windows binary
         shell: pwsh
         run: |
-          cd ../BombTimer
+          cd ./cmd/BombTimer
           $env:GOOS = "windows"
           $env:GOARCH = "amd64"
           go build -o CS2_GameStateIntegration-BombTimer.exe
 
-      - name: Upload BombTimer binary to release
+      - name: Upload all binaries to release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./cmd/BombTimer/CS2_GameStateIntegration-BombTimer.exe
+          files: |
+            ./cmd/SimpleWebsocketForBinary/CS2_GameStateIntegration-WSInterface.exe
+            ./cmd/BombTimer/CS2_GameStateIntegration-BombTimer.exe
           name: CS2_GameStateIntegration-BombTimer.exe
           tag_name: ${{ github.ref }}
           body: |
