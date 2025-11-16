@@ -13,8 +13,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func handlePOSTRequest(w http.ResponseWriter, r *http.Request, loggers extraLoggers) {
-	gsiEvent, err := extractGSIEventFromRequest(r, loggers)
+func handlePOSTRequest(w http.ResponseWriter, r *http.Request) {
+	gsiEvent, err := extractGSIEventFromRequest(r)
 	if err != nil {
 		return
 	}
@@ -64,7 +64,7 @@ func handleWS(_ http.ResponseWriter, request *http.Request, conn *websocket.Conn
 	}
 }
 
-func extractGSIEventFromRequest(r *http.Request, loggers extraLoggers) (*structs.GSIEvent, error) {
+func extractGSIEventFromRequest(r *http.Request) (*structs.GSIEvent, error) {
 	// Log the request body to stdout in Info level
 	requestBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -75,10 +75,6 @@ func extractGSIEventFromRequest(r *http.Request, loggers extraLoggers) (*structs
 	if err != nil {
 		log.Error().Err(err).Msg("Error flattening")
 	}
-
-	//log.Debug().Msg(string(requestBody))
-	//fmt.Println(string(requestBody))
-	loggers.data.Info().Msg(requestBodyFlat.String())
 
 	event, err := structs.NewGSIEvent(string(requestBody))
 	if err != nil {

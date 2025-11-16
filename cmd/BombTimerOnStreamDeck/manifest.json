@@ -1,0 +1,38 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Actions": [
+    {
+      "Name": "Bomb Timer",
+      "UUID": "uk.co.ltroberts.streamdeck.bombtimer.tile",
+      "Icon": "images/tile-icon",
+      "Tooltip": "Displays a countdown for the bomb timer",
+      "States": [
+        {
+          "Image": "images/black",
+          "TitleAlignment": "middle"
+        },
+        {
+          "Image": "images/explosion",
+          "TitleAlignment": "middle"
+        }
+      ]
+    }
+  ],
+  "Author": "Luke Roberts",
+  "CodePath": "BombTimerOnStreamDeck.exe",
+  "Description": "A plugin to hook into Counter Strike 2's GameStateIntegration",
+  "Icon": "images/plugin-icon",
+  "Name": "Test Plugin",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "UUID": "uk.co.ltroberts.streamdeck.bombtimer",
+  "Version": "0.0.0.1",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.6"
+  }
+}
